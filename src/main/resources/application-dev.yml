@@ -22,6 +22,8 @@ spring:
 
   flyway:
     enabled: true
+    baseline-on-migrate: true
+    baseline-version: 7
 
 logging:
   level:

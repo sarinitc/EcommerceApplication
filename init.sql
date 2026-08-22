@@ -154,6 +154,8 @@ CREATE TABLE products
 
     special_price NUMERIC(12,2),
 
+    deleted BOOLEAN NOT NULL DEFAULT FALSE,
+
     category_id BIGINT NOT NULL,
 
     seller_id BIGINT NOT NULL,

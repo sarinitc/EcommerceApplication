@@ -17,7 +17,7 @@ public class CustomUserDetailsService
     private final UserRepository userRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String email) {
+    public UserDetails loadUserByUsername(@NonNull String email) {
 
         User user = userRepository
                 .findByEmail(email)
