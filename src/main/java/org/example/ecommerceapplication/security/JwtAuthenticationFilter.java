@@ -22,7 +22,6 @@ public class JwtAuthenticationFilter
     private final JwtService jwtService;
     private final CustomUserDetailsService customUserDetailsService;
 
-
     @Override
     protected boolean shouldNotFilter(
             HttpServletRequest request
@@ -35,10 +34,9 @@ public class JwtAuthenticationFilter
                 || path.startsWith("/v3/api-docs");
     }
 
-
     @Override
     protected void doFilterInternal(
-            HttpServletRequest request,
+            @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
@@ -46,24 +44,35 @@ public class JwtAuthenticationFilter
         String authHeader =
                 request.getHeader("Authorization");
 
-        // No JWT → continue
-        if (authHeader == null ||
-                !authHeader.startsWith("Bearer ")) {
+        // No Authorization header
+        if (authHeader == null
+                || !authHeader.startsWith("Bearer ")) {
 
             filterChain.doFilter(request, response);
             return;
         }
 
+        // Remove "Bearer "
         String token =
                 authHeader.substring(7);
 
-        String email =
-                jwtService.extractUsername(token);
+        String email;
 
-        if (email != null &&
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication() == null) {
+        try {
+
+            email = jwtService.extractUsername(token);
+
+        } catch (Exception e) {
+
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // Only authenticate if no authentication exists yet
+        if (email != null
+                && SecurityContextHolder
+                .getContext()
+                .getAuthentication() == null) {
 
             UserDetails userDetails =
                     customUserDetailsService

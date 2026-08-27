@@ -1,54 +1,46 @@
-package org.example.ecommerceapplication.cart.entity;
+package org.example.ecommerceapplication.orders.entity;
+
 
 import jakarta.persistence.*;
 import lombok.*;
 import org.example.ecommerceapplication.product.entity.Product;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-
-import jakarta.persistence.*;
-import lombok.*;
-import org.example.ecommerceapplication.product.entity.Product;
 
 @Entity
-@Table(name = "cart_items")
+@Table(name = "order_items")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CartItem {
+public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "cart_item_id")
-    private Long cartItemId;
+    @Column(name = "order_item_id")
+    private Long orderItemId;
 
-
-    @Column(name = "discount", precision = 5, scale = 2)
+    @Column(name = "discount")
     private BigDecimal discount;
 
-
-    @Column(name = "product_price", precision = 12, scale = 2)
-    private BigDecimal productPrice;
-
+    @Column(name = "ordered_product_price")
+    private BigDecimal orderedProductPrice;
 
     @Column(name = "quantity")
     private Integer quantity;
 
 
-    // Many cart items belong to one cart
+    // Many order items belong to one order
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "cart_id",
+            name = "order_id",
             nullable = false
     )
-    private Cart cart;
+    private Order order;
 
 
-    // Many cart items can reference one product
+    // Many order items can reference one product
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "product_id",

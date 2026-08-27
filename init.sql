@@ -189,7 +189,7 @@ CREATE TABLE carts
 
     total_price NUMERIC(12,2) NOT NULL DEFAULT 0,
 
-    user_id BIGINT NOT NULL UNIQUE,
+    user_id BIGINT NOT NULL,
 
     CONSTRAINT fk_cart_user
         FOREIGN KEY (user_id)
@@ -631,7 +631,7 @@ VALUES
     (
         'sarin@gmail.com',
         '2026-08-01',
-        'COMPLETED',
+        'DELIVERED',
         1200.00,
         1,
         1
@@ -639,7 +639,7 @@ VALUES
     (
         'dara@gmail.com',
         '2026-08-02',
-        'COMPLETED',
+        'DELIVERED',
         1598.00,
         2,
         2
@@ -671,7 +671,7 @@ VALUES
     (
         'sreypov@gmail.com',
         '2026-08-06',
-        'COMPLETED',
+        'DELIVERED',
         269.97,
         6,
         6
@@ -703,7 +703,7 @@ VALUES
     (
         'makara@gmail.com',
         '2026-08-10',
-        'COMPLETED',
+        'DELIVERED',
         1500.00,
         10,
         10

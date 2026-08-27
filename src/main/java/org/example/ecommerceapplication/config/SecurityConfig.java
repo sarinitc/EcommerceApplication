@@ -1,8 +1,8 @@
 package org.example.ecommerceapplication.config;
 
 import lombok.RequiredArgsConstructor;
-import org.example.ecommerceapplication.security.JwtAuthenticationFilter;
 import org.example.ecommerceapplication.security.JwtAccessDeniedHandler;
+import org.example.ecommerceapplication.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -34,6 +34,7 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration
     ) throws Exception {
+
         return configuration.getAuthenticationManager();
     }
 
@@ -43,33 +44,43 @@ public class SecurityConfig {
     ) throws Exception {
 
         http
-                // Important for REST/JWT API
+                // JWT REST API → disable CSRF
                 .csrf(AbstractHttpConfigurer::disable)
 
                 .cors(Customizer.withDefaults())
 
+                // Do not store login session
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
                         )
                 )
 
-                .exceptionHandling(exception -> exception
-                        .accessDeniedHandler(jwtAccessDeniedHandler)
+                .exceptionHandling(exception ->
+                        exception.accessDeniedHandler(
+                                jwtAccessDeniedHandler
+                        )
                 )
 
                 .authorizeHttpRequests(auth -> auth
 
-                        // PUBLIC
+                        // Public authentication endpoints
                         .requestMatchers(
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/verify-otp",
-                                "/api/v1/auth/resend-otp",
+                                "/api/v1/auth/resend-otp"
+                        )
+                        .permitAll()
+
+                        // Swagger
+                        .requestMatchers(
                                 "/swagger-ui/**",
+                                "/swagger-ui.html",
                                 "/v3/api-docs/**"
                         )
                         .permitAll()
+
                         // Everything else requires JWT
                         .anyRequest()
                         .authenticated()
