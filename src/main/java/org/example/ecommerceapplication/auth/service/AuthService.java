@@ -1,8 +1,11 @@
 package org.example.ecommerceapplication.auth.service;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.example.ecommerceapplication.auth.dto.request.ForgotPasswordRequest;
 import org.example.ecommerceapplication.auth.dto.request.LoginRequest;
 import org.example.ecommerceapplication.auth.dto.request.RegisterRequest;
+import org.example.ecommerceapplication.auth.dto.request.ResetPasswordRequest;
 import org.example.ecommerceapplication.auth.dto.response.AuthResponse;
 import org.example.ecommerceapplication.security.JwtService;
 import org.example.ecommerceapplication.user.entity.Role;
@@ -29,6 +32,8 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final OtpService otpService;
+    private final EmailService emailService;
+    private final PasswordResetOtpService passwordResetOtpService;
 
 
     public AuthResponse register(RegisterRequest request) {
@@ -156,5 +161,98 @@ public class AuthService {
         otpService.sendOtp(
                 user.getEmail()
         );
+    }
+    @Transactional
+    public void forgotPassword(
+            ForgotPasswordRequest request
+    ) {
+
+        String email =
+                request.getEmail()
+                        .trim()
+                        .toLowerCase();
+
+
+        // 1. Find user
+        User user = userRepository
+                .findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "User not found"
+                        )
+                );
+
+
+        // 2. Generate OTP
+        String otp =
+                passwordResetOtpService
+                        .generateOtp(
+                                user.getEmail()
+                        );
+
+
+        // 3. Send OTP to email
+        emailService.sendPasswordResetOtp(
+                user.getEmail(),
+                otp
+        );
+    }
+    @Transactional
+    public void resetPassword(
+            ResetPasswordRequest request
+    ) {
+
+        String email =
+                request.getEmail()
+                        .trim()
+                        .toLowerCase();
+
+
+        // 1. Verify OTP
+        boolean validOtp =
+                passwordResetOtpService
+                        .verifyOtp(
+                                email,
+                                request.getOtp()
+                        );
+
+
+        if (!validOtp) {
+            throw new RuntimeException(
+                    "Invalid or expired OTP"
+            );
+        }
+
+
+        // 2. Find user
+        User user = userRepository
+                .findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "User not found"
+                        )
+                );
+
+
+        // 3. Encode new password
+        String encodedPassword =
+                passwordEncoder.encode(
+                        request.getNewPassword()
+                );
+
+
+        // 4. Update user's password
+        user.setPassword(
+                encodedPassword
+        );
+
+
+        // 5. Save user
+        userRepository.save(user);
+
+
+        // 6. Delete OTP so it cannot be reused
+        passwordResetOtpService
+                .deleteOtp(email);
     }
 }

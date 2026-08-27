@@ -1,10 +1,8 @@
 package org.example.ecommerceapplication.auth.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.example.ecommerceapplication.auth.dto.request.LoginRequest;
-import org.example.ecommerceapplication.auth.dto.request.RegisterRequest;
-import org.example.ecommerceapplication.auth.dto.request.ResendOtpRequest;
-import org.example.ecommerceapplication.auth.dto.request.VerifyOtpRequest;
+import org.example.ecommerceapplication.auth.dto.request.*;
 import org.example.ecommerceapplication.auth.dto.response.AuthResponse;
 import org.example.ecommerceapplication.auth.service.AuthService;
 import org.example.ecommerceapplication.response.ApiResponse;
@@ -106,6 +104,46 @@ public class AuthController {
                         .message("OTP resent successfully")
                         .status(200)
                         .payload("Please check your email")
+                        .timestamp(Instant.now())
+                        .build();
+
+        return ResponseEntity.ok(response);
+    }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request
+    ) {
+
+        authService.forgotPassword(request);
+
+        ApiResponse<Void> response =
+                ApiResponse.<Void>builder()
+                        .success(true)
+                        .message(
+                                "Password reset OTP sent successfully"
+                        )
+                        .status(HttpStatus.OK.value())
+                        .payload(null)
+                        .timestamp(Instant.now())
+                        .build();
+
+        return ResponseEntity.ok(response);
+    }
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request
+    ) {
+
+        authService.resetPassword(request);
+
+        ApiResponse<Void> response =
+                ApiResponse.<Void>builder()
+                        .success(true)
+                        .message(
+                                "Password reset successfully"
+                        )
+                        .status(HttpStatus.OK.value())
+                        .payload(null)
                         .timestamp(Instant.now())
                         .build();
 
