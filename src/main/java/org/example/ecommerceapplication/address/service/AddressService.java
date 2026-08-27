@@ -10,6 +10,8 @@ import org.example.ecommerceapplication.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AddressService {
@@ -17,6 +19,10 @@ public class AddressService {
     private final AddressRepository addressRepository;
     private final UserRepository userRepository;
 
+
+    // =====================================================
+    // CREATE ADDRESS
+    // =====================================================
 
     @Transactional
     public AddressResponse createAddress(
@@ -43,14 +49,15 @@ public class AddressService {
                 .build();
 
 
-        // 3. Save Address first
+        // 3. Save address
         Address savedAddress =
                 addressRepository.save(address);
 
 
-        // 4. Connect User <-> Address
+        // 4. Connect User -> Address
         user.getAddresses().add(savedAddress);
 
+        // Keep both sides synchronized in Java
         savedAddress.getUsers().add(user);
 
 
@@ -63,18 +70,100 @@ public class AddressService {
     }
 
 
+    // =====================================================
+    // GET ADDRESS BY ID
+    // =====================================================
+
+    @Transactional(readOnly = true)
+    public AddressResponse getAddressById(Long addressId) {
+
+        Address address = addressRepository
+                .findById(addressId)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Address not found with id: " + addressId
+                        )
+                );
+
+        return mapToAddressResponse(address);
+    }
+
+
+    // =====================================================
+    // ENTITY -> RESPONSE DTO
+    // =====================================================
+
     private AddressResponse mapToAddressResponse(
             Address address
     ) {
 
         return AddressResponse.builder()
-                .addressId(address.getAddressId())
-                .street(address.getStreet())
-                .buildingName(address.getBuildingName())
-                .city(address.getCity())
-                .state(address.getState())
-                .country(address.getCountry())
-                .pincode(address.getPincode())
+                .addressId(
+                        address.getAddressId()
+                )
+                .street(
+                        address.getStreet()
+                )
+                .buildingName(
+                        address.getBuildingName()
+                )
+                .city(
+                        address.getCity()
+                )
+                .state(
+                        address.getState()
+                )
+                .country(
+                        address.getCountry()
+                )
+                .pincode(
+                        address.getPincode()
+                )
                 .build();
+    }
+    @Transactional(readOnly = true)
+    public List<AddressResponse> getAllAddresses() {
+
+        List<Address> addresses =
+                addressRepository.findAll();
+
+        return addresses.stream()
+                .map(this::mapToAddressResponse)
+                .toList();
+    }
+    @Transactional
+    public  AddressResponse updateAddress(
+            Long addressId,
+            AddressRequest request
+    ) {
+        // 1 . Find address
+        Address address = addressRepository
+                .findById(addressId)
+                .orElseThrow(() ->
+                        new RuntimeException("Address not found with id:" + addressId));
+        // 2 . Update fields
+        address.setStreet(request.getStreet());
+        address.setBuildingName(request.getBuildingName());
+        address.setCity(request.getCity());
+        address.setCountry(request.getCountry());
+        address.setPincode(request.getPincode());
+        // 3. Save update address
+        Address updateAddress = addressRepository.save(address);
+        // 4. Entity-> Response DTO
+        return mapToAddressResponse(updateAddress);
+    }
+    @Transactional
+    public void deleteAddressById(Long addressId){
+        Address address = addressRepository.findById(addressId)
+                .orElseThrow(()->
+                        new RuntimeException("Address not found with id :"+ addressId));
+        // 2. Remove Address from owning side (User)
+        address.getUsers().forEach(user ->
+                user.getAddresses().remove(address));
+        // 3. Clear inverse relationship
+        address.getUsers().clear();
+        // 4. Delete address
+        addressRepository.delete(address);
+
     }
 }

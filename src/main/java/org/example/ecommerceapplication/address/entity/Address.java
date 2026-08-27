@@ -22,7 +22,6 @@ public class Address {
     @Column(name = "address_id")
     private Long addressId;
 
-
     @Column(name = "street")
     private String street;
 
