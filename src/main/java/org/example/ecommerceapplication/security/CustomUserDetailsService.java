@@ -20,7 +20,7 @@ public class CustomUserDetailsService
     public UserDetails loadUserByUsername(@NonNull String email) {
 
         User user = userRepository
-                .findByEmail(email)
+                .findByEmailIgnoreCase(email)
                 .orElseThrow(() ->
                         new UsernameNotFoundException(
                                 "User not found: " + email

@@ -5,6 +5,7 @@ import org.example.ecommerceapplication.security.JwtAccessDeniedHandler;
 import org.example.ecommerceapplication.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -17,6 +18,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.time.Clock;
+
 @Configuration
 @RequiredArgsConstructor
 @EnableMethodSecurity
@@ -28,6 +31,11 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public Clock clock() {
+        return Clock.systemUTC();
     }
 
     @Bean
@@ -81,6 +89,14 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**"
                         )
+                        .permitAll()
+
+                        // Product images returned by the upload API must be readable
+                        // by browsers without an Authorization header.
+                        .requestMatchers("/uploads/products/**")
+                        .permitAll()
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/uploads/products/**")
                         .permitAll()
 
                         // Everything else requires JWT

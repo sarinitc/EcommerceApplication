@@ -6,7 +6,9 @@ import org.example.ecommerceapplication.auth.dto.request.ForgotPasswordRequest;
 import org.example.ecommerceapplication.auth.dto.request.LoginRequest;
 import org.example.ecommerceapplication.auth.dto.request.RegisterRequest;
 import org.example.ecommerceapplication.auth.dto.request.ResetPasswordRequest;
+import org.example.ecommerceapplication.auth.exception.OtpException;
 import org.example.ecommerceapplication.auth.dto.response.AuthResponse;
+import org.example.ecommerceapplication.auth.dto.response.CurrentUserResponse;
 import org.example.ecommerceapplication.security.JwtService;
 import org.example.ecommerceapplication.user.entity.Role;
 import org.example.ecommerceapplication.user.entity.User;
@@ -18,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -36,14 +39,18 @@ public class AuthService {
     private final PasswordResetOtpService passwordResetOtpService;
 
 
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
 
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+        String email = normalizeEmail(request.getEmail());
+        String username = request.getUsername().trim();
+
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new OtpException("Email already exists", HttpStatus.CONFLICT);
         }
 
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists");
+        if (userRepository.existsByUsernameIgnoreCase(username)) {
+            throw new OtpException("Username already exists", HttpStatus.CONFLICT);
         }
 
         Role role = roleRepository
@@ -55,8 +62,8 @@ public class AuthService {
                 );
 
         User user = User.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
+                .username(username)
+                .email(email)
                 .password(
                         passwordEncoder.encode(
                                 request.getPassword()
@@ -78,12 +85,12 @@ public class AuthService {
                 .token(null)
                 .build();
     }
-
-
     public AuthResponse login(LoginRequest request) {
 
+        String email = normalizeEmail(request.getEmail());
+
         User user = userRepository
-                .findByEmail(request.getEmail())
+                .findByEmailIgnoreCase(email)
                 .orElseThrow(() ->
                         new RuntimeException("User not found")
                 );
@@ -97,7 +104,7 @@ public class AuthService {
         Authentication authentication =
                 authenticationManager.authenticate(
                         new UsernamePasswordAuthenticationToken(
-                                request.getEmail(),
+                                email,
                                 request.getPassword()
                         )
                 );
@@ -113,51 +120,65 @@ public class AuthService {
                 .token(token)
                 .build();
     }
+
+    public CurrentUserResponse getCurrentUser(String email) {
+
+        User user = userRepository
+                .findByEmailIgnoreCase(normalizeEmail(email))
+                .orElseThrow(() ->
+                        new RuntimeException("User not found")
+                );
+
+        return CurrentUserResponse.builder()
+                .userId(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .roles(user.getRoles().stream()
+                        .map(Role::getName)
+                        .sorted()
+                        .toList())
+                .build();
+    }
     public void verifyOtp(
             String email,
             String otp
     ) {
 
-        boolean valid =
-                otpService.verifyOtp(
-                        email,
-                        otp
-                );
-
+        String normalizedEmail = normalizeEmail(email);
+        boolean valid = otpService.verifyOtp(normalizedEmail, otp);
         if (!valid) {
-            throw new RuntimeException(
-                    "Invalid or expired OTP"
-            );
+            throw new OtpException("Invalid or expired OTP", HttpStatus.BAD_REQUEST);
         }
-
         User user = userRepository
-                .findByEmail(email)
+                .findByEmailIgnoreCase(normalizedEmail)
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found"
+                        new OtpException(
+                                "Email not found.",
+                                HttpStatus.NOT_FOUND
                         )
                 );
-
         user.setVerified(true);
 
         userRepository.save(user);
     }
     public void resendOtp(String email) {
 
+        String normalizedEmail = normalizeEmail(email);
+
         User user = userRepository
-                .findByEmail(email)
+                .findByEmailIgnoreCase(normalizedEmail)
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found"
+                        new OtpException(
+                                "Email not found.",
+                                HttpStatus.NOT_FOUND
                         )
                 );
-
         if (user.isVerified()) {
-            throw new RuntimeException(
-                    "Email already verified"
+            throw new OtpException(
+                    "Email is already verified. Use forgot-password to reset a password.",
+                    HttpStatus.BAD_REQUEST
             );
         }
-
         otpService.sendOtp(
                 user.getEmail()
         );
@@ -171,18 +192,21 @@ public class AuthService {
                 request.getEmail()
                         .trim()
                         .toLowerCase();
-
-
         // 1. Find user
         User user = userRepository
-                .findByEmail(email)
+                .findByEmailIgnoreCase(email)
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found"
+                        new OtpException(
+                                "Email not found.",
+                                HttpStatus.NOT_FOUND
                         )
                 );
-
-
+        if (!user.isVerified()) {
+            throw new OtpException(
+                    "Verify your email before resetting a password.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
         // 2. Generate OTP
         String otp =
                 passwordResetOtpService
@@ -201,58 +225,42 @@ public class AuthService {
     public void resetPassword(
             ResetPasswordRequest request
     ) {
-
         String email =
                 request.getEmail()
                         .trim()
                         .toLowerCase();
 
-
-        // 1. Verify OTP
-        boolean validOtp =
-                passwordResetOtpService
-                        .verifyOtp(
-                                email,
-                                request.getOtp()
-                        );
-
-
-        if (!validOtp) {
-            throw new RuntimeException(
-                    "Invalid or expired OTP"
-            );
-        }
-
+        // The reset OTP is purpose-specific and must be supplied here.
+        passwordResetOtpService.verifyOtp(email, request.getOtp());
 
         // 2. Find user
         User user = userRepository
-                .findByEmail(email)
+                .findByEmailIgnoreCase(email)
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found"
+                        new OtpException(
+                                "Email not found.",
+                                HttpStatus.NOT_FOUND
                         )
                 );
-
-
         // 3. Encode new password
         String encodedPassword =
                 passwordEncoder.encode(
                         request.getNewPassword()
                 );
 
-
         // 4. Update user's password
         user.setPassword(
                 encodedPassword
         );
-
-
         // 5. Save user
         userRepository.save(user);
-
 
         // 6. Delete OTP so it cannot be reused
         passwordResetOtpService
                 .deleteOtp(email);
+    }
+
+    private String normalizeEmail(String email) {
+        return email.trim().toLowerCase();
     }
 }

@@ -30,7 +30,8 @@ public class OtpService {
         );
 
         // 2. Redis key
-        String key = "otp:" + email;
+        String normalizedEmail = normalizeEmail(email);
+        String key = otpKey(normalizedEmail);
 
         // 3. Store OTP in Redis for 5 minutes
         redisTemplate.opsForValue().set(
@@ -41,7 +42,7 @@ public class OtpService {
 
         // 4. Send OTP to real email
         emailService.sendOtp(
-                email,
+                normalizedEmail,
                 otp
         );
     }
@@ -55,7 +56,7 @@ public class OtpService {
             String otp
     ) {
 
-        String key = "otp:" + email;
+        String key = otpKey(normalizeEmail(email));
 
         // 1. Get OTP from Redis
         String storedOtp =
@@ -78,5 +79,13 @@ public class OtpService {
         redisTemplate.delete(key);
 
         return true;
+    }
+
+    private String otpKey(String email) {
+        return "registration-otp:" + email;
+    }
+
+    private String normalizeEmail(String email) {
+        return email.trim().toLowerCase();
     }
 }

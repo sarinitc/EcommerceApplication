@@ -26,14 +26,11 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
-
-
     public ProductResponse createProduct(ProductRequest request) {
 
         if (productRepository.existsByProductNameIgnoreCaseAndDeletedFalse(request.getProductName())) {
             throw new ProductAlreadyExistsException(request.getProductName());
         }
-
         Category category = categoryRepository
                 .findById(request.getCategoryId())
                 .orElseThrow(() ->
@@ -46,11 +43,9 @@ public class ProductService {
                 .orElseThrow(() ->
                         new RuntimeException("Seller not found")
                 );
-
         Product product = Product.builder()
                 .productName(request.getProductName())
                 .description(request.getDescription())
-
                 .price(request.getPrice())
                 .quantity(request.getQuantity())
                 .discount(request.getDiscount())
@@ -79,12 +74,10 @@ public class ProductService {
                         .build())
                 .build();
     }
-
     public Page<ProductResponse> getAllProducts(
             int page,
             int size
     ) {
-
         Pageable pageable =
                 PageRequest.of(page, size);
 
@@ -131,7 +124,6 @@ public class ProductService {
                         .build()
         );
     }
-
     public ProductResponse updateProductById(
             Long productId,
             ProductRequest request
@@ -165,7 +157,6 @@ public class ProductService {
         product.setSeller(seller);
         // 5. Save updated product
         Product updatedProduct= productRepository.save(product);
-
         // 6. Return response
         return ProductResponse.builder()
                 .productId(updatedProduct.getProductId())
@@ -191,7 +182,6 @@ public class ProductService {
                                 )
                                 .build()
                 )
-
                 .seller(
                         SellerResponse.builder()
                                 .sellerId(
@@ -216,7 +206,6 @@ public class ProductService {
                 .orElseThrow(() ->
                         new RuntimeException("Product not found")
                 );
-
         return ProductResponse.builder()
                 .productId(product.getProductId())
                 .productName(product.getProductName())
@@ -252,7 +241,6 @@ public class ProductService {
                                 )
                                 .build()
                 )
-
                 .build();
     }
     public ProductResponse deleteProductById(Long productId) {
@@ -280,5 +268,6 @@ public class ProductService {
                 .image(deletedProduct.getImage())
                 .build();
     }
+
 }
 

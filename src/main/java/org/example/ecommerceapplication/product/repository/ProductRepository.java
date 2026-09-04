@@ -18,4 +18,5 @@ public interface ProductRepository
     List<Product> findAllByDeletedFalse();
 
     Optional<Product> findByProductIdAndDeletedFalse(Long productId);
+    long countByDeletedFalse();
 }

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.ecommerceapplication.address.dto.request.AddressRequest;
 import org.example.ecommerceapplication.address.dto.response.AddressResponse;
 import org.example.ecommerceapplication.address.entity.Address;
+import org.example.ecommerceapplication.address.exception.AddressAlreadyExistsException;
 import org.example.ecommerceapplication.address.repository.AddressRepository;
 import org.example.ecommerceapplication.user.entity.User;
 import org.example.ecommerceapplication.user.repository.UserRepository;
@@ -37,6 +38,18 @@ public class AddressService {
                         new RuntimeException("User not found")
                 );
 
+        // Do not add the same complete address more than once for this user.
+        if (addressRepository.existsDuplicateForUser(
+                email,
+                request.getStreet(),
+                request.getBuildingName(),
+                request.getCity(),
+                request.getState(),
+                request.getCountry(),
+                request.getPincode()
+        )) {
+            throw new AddressAlreadyExistsException();
+        }
 
         // 2. Create Address entity
         Address address = Address.builder()

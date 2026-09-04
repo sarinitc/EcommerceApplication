@@ -4,10 +4,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.ecommerceapplication.auth.dto.request.*;
 import org.example.ecommerceapplication.auth.dto.response.AuthResponse;
+import org.example.ecommerceapplication.auth.dto.response.CurrentUserResponse;
 import org.example.ecommerceapplication.auth.service.AuthService;
 import org.example.ecommerceapplication.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -25,7 +28,7 @@ public class AuthController {
     // =========================
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(
-            @RequestBody RegisterRequest request
+            @Valid @RequestBody RegisterRequest request
     ) {
 
         AuthResponse authResponse =
@@ -53,7 +56,7 @@ public class AuthController {
     // =========================
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(
-            @RequestBody LoginRequest request
+            @Valid @RequestBody LoginRequest request
     ) {
 
         AuthResponse authResponse =
@@ -70,9 +73,29 @@ public class AuthController {
 
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<CurrentUserResponse>> getCurrentUser(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+
+        CurrentUserResponse currentUser = authService
+                .getCurrentUser(userDetails.getUsername());
+
+        ApiResponse<CurrentUserResponse> response = ApiResponse
+                .<CurrentUserResponse>builder()
+                .success(true)
+                .message("Current user retrieved successfully")
+                .status(HttpStatus.OK.value())
+                .payload(currentUser)
+                .timestamp(Instant.now())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
     @PostMapping("/verify-otp")
     public ResponseEntity<ApiResponse<String>> verifyOtp(
-            @RequestBody VerifyOtpRequest request
+            @Valid @RequestBody VerifyOtpRequest request
     ) {
 
         authService.verifyOtp(
@@ -83,9 +106,9 @@ public class AuthController {
         ApiResponse<String> response =
                 ApiResponse.<String>builder()
                         .success(true)
-                        .message("Email verified successfully")
+                        .message("OTP verified successfully")
                         .status(200)
-                        .payload("Verification successful")
+                        .payload("OTP verification successful")
                         .timestamp(Instant.now())
                         .build();
 
@@ -93,7 +116,7 @@ public class AuthController {
     }
     @PostMapping("/resend-otp")
     public ResponseEntity<ApiResponse<String>> resendOtp(
-            @RequestBody ResendOtpRequest request
+            @Valid @RequestBody ResendOtpRequest request
     ) {
 
         authService.resendOtp(request.getEmail());

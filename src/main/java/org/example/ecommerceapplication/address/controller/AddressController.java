@@ -1,5 +1,9 @@
 package org.example.ecommerceapplication.address.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.ecommerceapplication.address.dto.request.AddressRequest;
@@ -27,6 +31,23 @@ public class AddressController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
+    @Operation(summary = "Create an address", description = "Requires the CUSTOMER or ADMIN role.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "201",
+                    description = "Address created successfully"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "The current user already has this address",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"message\":\"This address already exists for the current user\",\"status\":409,\"payload\":null}"
+                            )
+                    )
+            )
+    })
     public ResponseEntity<ApiResponse<AddressResponse>> createAddress(
             @Valid @RequestBody AddressRequest request,
             Authentication authentication

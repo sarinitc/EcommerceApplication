@@ -3,8 +3,9 @@ package org.example.ecommerceapplication.auth.service;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 public class EmailService {
 
     private final JavaMailSender mailSender;
+    private final TemplateEngine templateEngine;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
@@ -228,21 +230,33 @@ public class EmailService {
             String otp
     ) {
 
-        SimpleMailMessage message =
-                new SimpleMailMessage();
+        Context context = new Context();
+        context.setVariable("otp", otp);
 
-        message.setTo(email);
-
-        message.setSubject(
-                "Reset Your Password"
+        String htmlContent = templateEngine.process(
+                "password-reset-otp",
+                context
         );
 
-        message.setText(
-                "Your password reset OTP is: "
-                        + otp
-                        + "\n\nThis OTP expires in 5 minutes."
-        );
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(
+                    message,
+                    true,
+                    "UTF-8"
+            );
 
-        mailSender.send(message);
+            helper.setFrom(fromEmail);
+            helper.setTo(email);
+            helper.setSubject("Reset Your Password");
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException(
+                    "Failed to send password reset email",
+                    e
+            );
+        }
     }
 }
