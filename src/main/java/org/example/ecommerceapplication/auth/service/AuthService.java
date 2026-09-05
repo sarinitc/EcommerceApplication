@@ -133,6 +133,7 @@ public class AuthService {
                 .userId(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
+                .profileImage(user.getProfileImage())
                 .roles(user.getRoles().stream()
                         .map(Role::getName)
                         .sorted()

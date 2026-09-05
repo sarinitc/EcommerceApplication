@@ -21,13 +21,10 @@ import java.time.LocalDate;
 public class DashboardController {
 
     private final DashboardService dashboardService;
-
-
     @GetMapping("/overview")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<DashboardOverviewResponse>>
     getOverview(
-
             @RequestParam(required = false)
             @DateTimeFormat(
                     iso = DateTimeFormat.ISO.DATE

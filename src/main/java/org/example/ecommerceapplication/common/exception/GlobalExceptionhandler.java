@@ -1,6 +1,7 @@
 package org.example.ecommerceapplication.common.exception;
 
 import org.example.ecommerceapplication.category.exception.CategoryAlreadyExistsException;
+import org.example.ecommerceapplication.customer.exception.CustomerNotFoundException;
 import org.example.ecommerceapplication.address.exception.AddressAlreadyExistsException;
 import org.example.ecommerceapplication.auth.exception.OtpException;
 import org.example.ecommerceapplication.orders.exception.OrderNotFoundException;
@@ -34,6 +35,21 @@ public class GlobalExceptionhandler {
     @ExceptionHandler(OrderNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleOrderNotFound(
             OrderNotFoundException exception
+    ) {
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .success(false)
+                .message(exception.getMessage())
+                .status(HttpStatus.NOT_FOUND.value())
+                .payload(null)
+                .timestamp(Instant.now())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(CustomerNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCustomerNotFound(
+            CustomerNotFoundException exception
     ) {
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .success(false)

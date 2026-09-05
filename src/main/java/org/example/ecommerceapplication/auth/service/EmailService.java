@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -257,6 +258,36 @@ public class EmailService {
                     "Failed to send password reset email",
                     e
             );
+        }
+    }
+
+    public void sendCustomerInvitation(String toEmail, String username) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("You've been invited to ECommerce");
+
+            String safeUsername = HtmlUtils.htmlEscape(username);
+            String html = """
+                    <!DOCTYPE html>
+                    <html>
+                    <body style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.6">
+                      <h2>Welcome to ECommerce</h2>
+                      <p>Hello %s,</p>
+                      <p>An administrator has created an account for this email address.</p>
+                      <p>You can now sign in using your email address and the temporary password provided by your administrator.</p>
+                      <p>If you did not expect this invitation, please contact the administrator.</p>
+                    </body>
+                    </html>
+                    """.formatted(safeUsername);
+
+            helper.setText(html, true);
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Failed to send customer invitation email", e);
         }
     }
 }

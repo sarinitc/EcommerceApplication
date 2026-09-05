@@ -96,6 +96,9 @@ public class SecurityConfig {
                         .requestMatchers("/uploads/products/**")
                         .permitAll()
 
+                        .requestMatchers("/uploads/profiles/**")
+                        .permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/api/v1/uploads/products/**")
                         .permitAll()
 

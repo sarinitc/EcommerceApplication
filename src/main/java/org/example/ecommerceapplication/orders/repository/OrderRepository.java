@@ -9,7 +9,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 public interface OrderRepository
         extends JpaRepository<Order, Long> {
@@ -60,4 +62,16 @@ public interface OrderRepository
             LocalDate to,
             org.springframework.data.domain.Pageable pageable
     );
+
+    long countByUser_Id(Long userId);
+
+    @Query("""
+            select coalesce(sum(o.totalAmount), 0)
+            from Order o
+            where o.user.id = :userId
+            """)
+    BigDecimal sumTotalSpentByUserId(@Param("userId") Long userId);
+
+    Optional<Order> findTopByUser_IdOrderByOrderDateDescOrderIdDesc(Long userId);
+    boolean existsByUser_Id(Long userId);
 }
