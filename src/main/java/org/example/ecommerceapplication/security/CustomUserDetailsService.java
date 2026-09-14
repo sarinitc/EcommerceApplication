@@ -2,6 +2,7 @@ package org.example.ecommerceapplication.security;
 
 import lombok.RequiredArgsConstructor;
 import org.example.ecommerceapplication.user.entity.User;
+import org.example.ecommerceapplication.user.entity.AccountStatus;
 import org.example.ecommerceapplication.user.repository.UserRepository;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -36,6 +37,7 @@ public class CustomUserDetailsService
                 .withUsername(user.getEmail())
                 .password(user.getPassword())
                 .authorities(authorities)
+                .accountLocked(user.getAccountStatus() == AccountStatus.BLOCKED)
                 .build();
     }
 }

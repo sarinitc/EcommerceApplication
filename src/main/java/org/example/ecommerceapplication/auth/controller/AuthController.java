@@ -172,4 +172,22 @@ public class AuthController {
 
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody ChangePasswordRequest request
+    ) {
+        authService.changePassword(userDetails.getUsername(), request);
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .success(true)
+                .message("Password changed successfully")
+                .status(HttpStatus.OK.value())
+                .payload(null)
+                .timestamp(Instant.now())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
 }

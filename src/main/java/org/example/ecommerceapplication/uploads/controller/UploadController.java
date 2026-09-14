@@ -1,5 +1,4 @@
 package org.example.ecommerceapplication.uploads.controller;
-
 import lombok.RequiredArgsConstructor;
 import org.example.ecommerceapplication.response.ApiResponse;
 import org.example.ecommerceapplication.uploads.dto.response.ImageUploadResponse;
@@ -19,21 +18,17 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
-
 @RestController
 @RequestMapping("/api/v1/uploads")
 @RequiredArgsConstructor
 public class UploadController {
-
     private final ProductImageService productImageService;
-
     @PostMapping(value = "/products", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ImageUploadResponse>> uploadProductImage(
             @RequestPart("file") MultipartFile file
     ) {
         ImageUploadResponse image = productImageService.uploadImage(file);
-
         ApiResponse<ImageUploadResponse> response = ApiResponse
                 .<ImageUploadResponse>builder()
                 .success(true)
@@ -42,10 +37,8 @@ public class UploadController {
                 .payload(image)
                 .timestamp(Instant.now())
                 .build();
-
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-
     @GetMapping("/products/{fileName:.+}")
     public ResponseEntity<Resource> getProductImage(
             @PathVariable String fileName

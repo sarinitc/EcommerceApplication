@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import org.example.ecommerceapplication.user.entity.AccountStatus;
 
 @Data
 @Builder
@@ -14,6 +15,7 @@ import java.util.List;
 public class CurrentUserResponse {
 
     private Long userId;
+    private AccountStatus accountStatus;
     private String username;
     private String email;
     private String profileImage;

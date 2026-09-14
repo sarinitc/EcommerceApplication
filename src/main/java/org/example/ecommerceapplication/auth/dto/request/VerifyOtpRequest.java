@@ -14,5 +14,6 @@ public class VerifyOtpRequest {
 
     @NotBlank(message = "OTP is required")
     @Pattern(regexp = "\\d{6}", message = "OTP must be a 6-digit number")
+    @lombok.ToString.Exclude
     private String otp;
 }

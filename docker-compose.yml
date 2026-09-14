@@ -12,10 +12,8 @@ services:
 
     ports:
       - "${POSTGRES_PORT}:5432"
-
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
     healthcheck:
       test:
         [
@@ -25,28 +23,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-
   redis:
     image: redis:8
     container_name: ecommerce_redis
     restart: unless-stopped
-
     ports:
       - "${REDIS_PORT}:6379"
-
     volumes:
       - redis_data:/data
-
     command: redis-server --appendonly yes
-
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
-
-
 volumes:
   postgres_data:
   redis_data:

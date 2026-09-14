@@ -9,22 +9,37 @@ import org.example.ecommerceapplication.customer.dto.response.AdminCustomerRespo
 import org.example.ecommerceapplication.customer.dto.response.request.AdminCreateCustomerRequest;
 import org.example.ecommerceapplication.customer.dto.request.AdminCustomerUpdateRequest;
 import org.example.ecommerceapplication.customer.service.AdminCustomerService;
+import org.example.ecommerceapplication.profile.dto.response.ProfileImageUploadResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.multipart.MultipartFile;
 import java.time.Instant;
 import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/admin/customers")
 @RequiredArgsConstructor
 public class AdminCustomerController {
-
     private final AdminCustomerService adminCustomerService;
 
+    @PostMapping(value = "/{customerId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<ProfileImageUploadResponse>> uploadCustomerImage(
+            @PathVariable Long customerId,
+            @RequestPart("file") MultipartFile file
+    ) {
+        ProfileImageUploadResponse image = adminCustomerService.uploadCustomerImage(customerId, file);
+        return ResponseEntity.ok(ApiResponse.<ProfileImageUploadResponse>builder()
+                .success(true)
+                .message("Customer photo updated successfully")
+                .status(HttpStatus.OK.value())
+                .payload(image)
+                .timestamp(Instant.now())
+                .build());
+    }
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Page<AdminCustomerResponse>>>
@@ -64,9 +79,7 @@ public class AdminCustomerController {
     public ResponseEntity<ApiResponse<Void>> deleteCustomer(
             @PathVariable Long customerId
     ) {
-
         adminCustomerService.deleteCustomer(customerId);
-
         ApiResponse<Void> response =
                 ApiResponse.<Void>builder()
                         .success(true)
@@ -104,10 +117,8 @@ public class AdminCustomerController {
     createCustomer(
             @Valid @RequestBody AdminCreateCustomerRequest request
     ) {
-
         AdminCustomerDetailResponse customer =
                 adminCustomerService.createCustomer(request);
-
         ApiResponse<AdminCustomerDetailResponse> response =
                 ApiResponse
                         .<AdminCustomerDetailResponse>builder()
@@ -117,12 +128,10 @@ public class AdminCustomerController {
                         .payload(customer)
                         .timestamp(Instant.now())
                         .build();
-
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
     }
-
     @PatchMapping("/{customerId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<AdminCustomerDetailResponse>> updateCustomer(

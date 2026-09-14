@@ -11,6 +11,8 @@ import org.example.ecommerceapplication.customer.dto.request.AdminCustomerUpdate
 import org.example.ecommerceapplication.customer.exception.CustomerNotFoundException;
 import org.example.ecommerceapplication.orders.entity.Order;
 import org.example.ecommerceapplication.orders.repository.OrderRepository;
+import org.example.ecommerceapplication.profile.dto.response.ProfileImageUploadResponse;
+import org.example.ecommerceapplication.profile.service.UploadService;
 import org.example.ecommerceapplication.user.entity.AccountStatus;
 import org.example.ecommerceapplication.user.entity.Role;
 import org.example.ecommerceapplication.user.entity.User;
@@ -22,6 +24,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -38,6 +42,14 @@ public class AdminCustomerService {
     private final AddressRepository addressRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final UploadService uploadService;
+
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public ProfileImageUploadResponse uploadCustomerImage(Long customerId, MultipartFile file) {
+        User customer = findCustomer(customerId);
+        return uploadService.uploadProfileImageForUser(file, customer);
+    }
 
 
     @Transactional(readOnly = true)

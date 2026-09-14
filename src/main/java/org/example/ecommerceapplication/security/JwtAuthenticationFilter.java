@@ -88,6 +88,14 @@ public class JwtAuthenticationFilter
                     userDetails
             )) {
 
+                if (!userDetails.isAccountNonLocked() || !userDetails.isEnabled()) {
+                    SecurityContextHolder.clearContext();
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"success\":false,\"message\":\"Your account has been blocked. Please contact support.\",\"status\":403}");
+                    return;
+                }
+
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails,

@@ -2,6 +2,7 @@ package org.example.ecommerceapplication.auth.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.example.ecommerceapplication.auth.dto.request.ChangePasswordRequest;
 import org.example.ecommerceapplication.auth.dto.request.ForgotPasswordRequest;
 import org.example.ecommerceapplication.auth.dto.request.LoginRequest;
 import org.example.ecommerceapplication.auth.dto.request.RegisterRequest;
@@ -10,6 +11,7 @@ import org.example.ecommerceapplication.auth.exception.OtpException;
 import org.example.ecommerceapplication.auth.dto.response.AuthResponse;
 import org.example.ecommerceapplication.auth.dto.response.CurrentUserResponse;
 import org.example.ecommerceapplication.security.JwtService;
+import org.example.ecommerceapplication.user.entity.AccountStatus;
 import org.example.ecommerceapplication.user.entity.Role;
 import org.example.ecommerceapplication.user.entity.User;
 import org.example.ecommerceapplication.user.repository.RoleRepository;
@@ -22,7 +24,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.http.HttpStatus;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 @Service
@@ -95,6 +99,10 @@ public class AuthService {
                         new RuntimeException("User not found")
                 );
 
+        if (user.getAccountStatus() == AccountStatus.BLOCKED) {
+            throw new OtpException("Your account has been blocked. Please contact support.", HttpStatus.FORBIDDEN);
+        }
+
         if (!user.isVerified()) {
             throw new RuntimeException(
                     "Please verify your email before login"
@@ -131,6 +139,7 @@ public class AuthService {
 
         return CurrentUserResponse.builder()
                 .userId(user.getId())
+                .accountStatus(user.getAccountStatus())
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .profileImage(user.getProfileImage())
@@ -189,10 +198,7 @@ public class AuthService {
             ForgotPasswordRequest request
     ) {
 
-        String email =
-                request.getEmail()
-                        .trim()
-                        .toLowerCase();
+        String email = normalizeEmail(request.getEmail());
         // 1. Find user
         User user = userRepository
                 .findByEmailIgnoreCase(email)
@@ -226,10 +232,7 @@ public class AuthService {
     public void resetPassword(
             ResetPasswordRequest request
     ) {
-        String email =
-                request.getEmail()
-                        .trim()
-                        .toLowerCase();
+        String email = normalizeEmail(request.getEmail());
 
         // The reset OTP is purpose-specific and must be supplied here.
         passwordResetOtpService.verifyOtp(email, request.getOtp());
@@ -261,7 +264,31 @@ public class AuthService {
                 .deleteOtp(email);
     }
 
+    @Transactional
+    public void changePassword(String email, ChangePasswordRequest request) {
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new OtpException("New password and confirm password do not match", HttpStatus.BAD_REQUEST);
+        }
+
+        // BCrypt accepts at most 72 bytes, including multibyte UTF-8 characters.
+        if (request.getCurrentPassword().getBytes(StandardCharsets.UTF_8).length > 72
+                || request.getNewPassword().getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw new OtpException("Passwords must not exceed 72 UTF-8 bytes", HttpStatus.BAD_REQUEST);
+        }
+
+        User user = userRepository
+                .findByEmailIgnoreCase(normalizeEmail(email))
+                .orElseThrow(() -> new OtpException("User not found", HttpStatus.NOT_FOUND));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new OtpException("Current password is incorrect", HttpStatus.BAD_REQUEST);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+
     private String normalizeEmail(String email) {
-        return email.trim().toLowerCase();
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 }

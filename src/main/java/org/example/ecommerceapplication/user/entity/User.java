@@ -26,34 +26,34 @@ public class User {
     @Column(name = "user_id")
     private Long id;
 
-    @Column(name = "username", nullable = false)
+    @Column(name = "username", nullable = false, length = 20)
     private String username;
 
-    @Column(name = "first_name")
+    @Column(name = "first_name", length = 100)
     private String firstName;
 
-    @Column(name = "last_name")
+    @Column(name = "last_name", length = 100)
     private String lastName;
 
-    @Column(name = "email", nullable = false)
+    @Column(name = "email", nullable = false, length = 50)
     private String email;
 
     @Column(name = "phone_number", length = 30)
     private String phoneNumber;
 
-    @Column(name = "password", nullable = false)
+    @Column(name = "password", nullable = false, length = 120)
     private String password;
 
-    @Column(name = "profile_image")
+    @Column(name = "profile_image", length = 500)
     private String profileImage;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "account_status", nullable = false)
+    @Column(name = "account_status", nullable = false, length = 20)
     @Builder.Default
     private AccountStatus accountStatus = AccountStatus.ACTIVE;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "customer_type")
+    @Column(name = "customer_type", length = 30)
     private CustomerType customerType;
 
     @Builder.Default
@@ -61,13 +61,13 @@ public class User {
     private boolean taxExempt = false;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "gender")
+    @Column(name = "gender", length = 30)
     private Gender gender;
 
-    @Column(name = "preferred_language")
+    @Column(name = "preferred_language", length = 50)
     private String preferredLanguage;
 
-    @Column(name = "preferred_currency")
+    @Column(name = "preferred_currency", length = 10)
     private String preferredCurrency;
 
     @Column(name = "date_of_birth")

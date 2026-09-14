@@ -11,5 +11,6 @@ public class LoginRequest {
     private String email;
 
     @NotBlank(message = "Password is required")
+    @lombok.ToString.Exclude
     private String password;
 }
