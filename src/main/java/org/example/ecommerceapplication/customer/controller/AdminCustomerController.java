@@ -10,7 +10,9 @@ import org.example.ecommerceapplication.customer.dto.response.request.AdminCreat
 import org.example.ecommerceapplication.customer.dto.request.AdminCustomerUpdateRequest;
 import org.example.ecommerceapplication.customer.service.AdminCustomerService;
 import org.example.ecommerceapplication.profile.dto.response.ProfileImageUploadResponse;
+import org.example.ecommerceapplication.user.entity.AccountStatus;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/customers")
@@ -151,5 +154,34 @@ public class AdminCustomerController {
                         .build();
 
         return ResponseEntity.ok(response);
+    }
+    @GetMapping(
+            value = "/export",
+            produces = "text/csv"
+    )
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> exportCustomers(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) AccountStatus status
+    ) {
+
+        byte[] csv =
+                adminCustomerService.exportCustomers(
+                        search,
+                        status
+                );
+
+        String fileName =
+                "customers-" + LocalDate.now() + ".csv";
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + fileName + "\""
+                )
+                .contentType(
+                        MediaType.parseMediaType("text/csv")
+                )
+                .body(csv);
     }
 }

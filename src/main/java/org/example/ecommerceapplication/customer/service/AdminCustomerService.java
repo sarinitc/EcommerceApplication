@@ -26,12 +26,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-
 @Service
 @RequiredArgsConstructor
 public class AdminCustomerService {
@@ -43,22 +43,18 @@ public class AdminCustomerService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final UploadService uploadService;
-
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public ProfileImageUploadResponse uploadCustomerImage(Long customerId, MultipartFile file) {
         User customer = findCustomer(customerId);
         return uploadService.uploadProfileImageForUser(file, customer);
     }
-
-
     @Transactional(readOnly = true)
     public Page<AdminCustomerResponse> getCustomers(
             int page,
             int size,
             String search
     ) {
-
         Pageable pageable =
                 PageRequest.of(page, size);
 
@@ -413,5 +409,123 @@ public class AdminCustomerService {
         }
 
         return mapToCustomerDetail(userRepository.save(customer));
+    }
+    // NEW
+    @Transactional(readOnly = true)
+    public byte[] exportCustomers(
+            String search,
+            AccountStatus status
+    ) {
+        List<User> customers =
+                userRepository.findCustomersForExport(
+                        search,
+                        status
+                );
+
+        StringBuilder csv = new StringBuilder(
+                "customerId,name,email,phoneNumber,accountStatus,verified,location,orderCount,totalSpent,lastOrderDate\n"
+        );
+
+        for (User user : customers) {
+            CustomerExportRow row = toExportRow(user);
+
+            csv.append(escapeCsv(
+                    String.valueOf(row.getCustomerId()))).append(',')
+               .append(escapeCsv(row.getName())).append(',')
+               .append(escapeCsv(row.getEmail())).append(',')
+               .append(escapeCsv(row.getPhoneNumber())).append(',')
+               .append(escapeCsv(row.getAccountStatus())).append(',')
+               .append(row.isVerified() ? "Yes" : "No").append(',')
+               .append(escapeCsv(row.getLocation())).append(',')
+               .append(row.getOrderCount()).append(',')
+               .append(row.getTotalSpent() != null
+                       ? row.getTotalSpent().toPlainString()
+                       : "").append(',')
+               .append(row.getLastOrderDate() != null
+                       ? row.getLastOrderDate().toString()
+                       : "")
+               .append('\n');
+        }
+
+        return csv.toString()
+                .getBytes(StandardCharsets.UTF_8);
+    }
+
+    private CustomerExportRow toExportRow(User user) {
+        long orderCount =
+                orderRepository.countByUser_Id(user.getId());
+
+        BigDecimal totalSpent =
+                orderRepository.sumTotalSpentByUserId(user.getId());
+
+        Order lastOrder =
+                orderRepository
+                        .findTopByUser_IdOrderByOrderDateDescOrderIdDesc(
+                                user.getId()
+                        )
+                        .orElse(null);
+
+        return CustomerExportRow.builder()
+                .customerId(user.getId())
+                .name(fullName(user))
+                .email(user.getEmail())
+                .phoneNumber(user.getPhoneNumber())
+                .accountStatus(user.getAccountStatus().name())
+                .verified(user.isVerified())
+                .location(toLocationString(user))
+                .orderCount(orderCount)
+                .totalSpent(totalSpent)
+                .lastOrderDate(
+                        lastOrder != null
+                                ? lastOrder.getOrderDate()
+                                : null
+                )
+                .build();
+    }
+
+    private String fullName(User user) {
+        boolean hasFirst = user.getFirstName() != null;
+        boolean hasLast = user.getLastName() != null;
+
+        if (!hasFirst && !hasLast) {
+            return user.getUsername();
+        }
+
+        String name = hasFirst ? user.getFirstName() : "";
+        if (hasLast) {
+            name += (name.isEmpty() ? "" : " ") + user.getLastName();
+        }
+        return name;
+    }
+
+    private String toLocationString(User user) {
+        return user.getAddresses().stream()
+                .findFirst()
+                .map(address -> {
+                    List<String> parts = new ArrayList<>();
+                    if (address.getCity() != null) {
+                        parts.add(address.getCity());
+                    }
+                    if (address.getState() != null) {
+                        parts.add(address.getState());
+                    }
+                    if (address.getCountry() != null) {
+                        parts.add(address.getCountry());
+                    }
+                    return String.join(", ", parts);
+                })
+                .orElse(null);
+    }
+
+    private String escapeCsv(String value) {
+        if (value == null) {
+            return "";
+        }
+        if (value.contains(",")
+                || value.contains("\"")
+                || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
     }
 }

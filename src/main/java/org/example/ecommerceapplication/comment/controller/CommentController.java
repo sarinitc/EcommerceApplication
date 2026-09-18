@@ -21,7 +21,6 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class CommentController {
     private final CommentService commentService;
-
     @PostMapping
     public ResponseEntity<ApiResponse<CommentResponse>> createComment(
             @Valid @RequestBody CommentRequest request,

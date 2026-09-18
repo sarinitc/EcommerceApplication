@@ -1,5 +1,6 @@
 package org.example.ecommerceapplication.user.repository;
 
+import org.example.ecommerceapplication.user.entity.AccountStatus;
 import org.example.ecommerceapplication.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -7,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository
@@ -46,5 +48,26 @@ public interface UserRepository
     Page<User> findCustomers(
             @Param("search") String search,
             Pageable pageable
+    );
+
+    @Query("""
+    SELECT DISTINCT u
+    FROM User u
+    JOIN u.roles r
+    WHERE r.name = 'CUSTOMER'
+      AND (:status IS NULL OR u.accountStatus = :status)
+      AND (
+          :search IS NULL
+          OR :search = ''
+          OR LOWER(u.username)
+                LIKE LOWER(CONCAT('%', :search, '%'))
+          OR LOWER(u.email)
+                LIKE LOWER(CONCAT('%', :search, '%'))
+      )
+    ORDER BY u.id
+""")
+    List<User> findCustomersForExport(
+            @Param("search") String search,
+            @Param("status") AccountStatus status
     );
 }
